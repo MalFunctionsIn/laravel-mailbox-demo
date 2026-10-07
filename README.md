@@ -5,8 +5,6 @@ through its paces: a browser control panel that fires real outgoing mail, the
 package's dashboard rendering it, and a test suite asserting against the
 **fully rendered** messages.
 
-Companion material for the video and the write-up lives in [`docs/`](docs/).
-
 ---
 
 ## What the package actually does
@@ -246,7 +244,4 @@ resources/views/
   demo.blade.php                      the control panel
   emails/                             the three templates
 tests/Feature/                        30 tests, 152 assertions
-docs/
-  youtube-script.md                   shot-by-shot recording script
-  linkedin-article.md                 the write-up, ready to post
 ```
