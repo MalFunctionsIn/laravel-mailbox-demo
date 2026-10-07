@@ -9,3 +9,12 @@ storage/framework/cache
 storage/framework/sessions
 storage/framework/views
 storage/logs
+
+# Belt and braces for the framework detection above: if Vercel never sees the
+# Vite scaffolding, it cannot decide this is a frontend project. None of it is
+# used — the demo page has inline CSS and the dashboard ships built assets.
+package.json
+package-lock.json
+vite.config.js
+resources/js
+resources/css

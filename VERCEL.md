@@ -87,6 +87,47 @@ explanation instead. If you hit it, either set `COMPOSER_FLAGS` to an empty
 string in the Vercel project's build environment, or move the package from
 `require-dev` to `require`.
 
+## Troubleshooting
+
+### `No Output Directory named "dist" found after the Build completed`
+
+Vercel's framework auto-detection saw `package.json` and `vite.config.js` —
+which Laravel ships by default — decided this was a Vite project, ran a
+frontend build, and then looked for a `dist/` directory.
+
+There is no frontend build in this app. The demo page uses inline CSS and the
+mailbox dashboard ships its own compiled assets under
+`public/vendor/mailbox/`. The only `@vite` call in the project is in Laravel's
+stock `welcome.blade.php`, which no route serves.
+
+`vercel.json` now sets `"framework": null` to stop the guessing, and
+`.vercelignore` keeps the Vite scaffolding out of the upload so there is
+nothing left to detect.
+
+If the error survives a redeploy, the preset is still saved on the project from
+the import screen. In **Project Settings → Build and Deployment**:
+
+- **Framework Preset:** Other
+- **Build Command:** leave empty (switch off any override)
+- **Output Directory:** leave empty (switch off any override)
+
+Then **Deployments → ⋯ → Redeploy**, with the build cache disabled.
+
+### `BUILD FAILED — redberry/mailbox-for-laravel is not installed`
+
+That is this project's own build guard, firing because the install dropped dev
+dependencies. See *Why the build can fail on purpose* above.
+
+### `419 Page Expired` on the send buttons
+
+`APP_KEY` is not set, so the session cookie cannot be decrypted. Sessions are
+already on the cookie driver, so this is the only cause.
+
+### The dashboard returns 403
+
+`DEMO_PUBLIC_MAILBOX` did not reach the runtime. Add it as `true` in the
+project's environment variables.
+
 ## Environment variables already set in vercel.json
 
 | Variable | Value | Why |
