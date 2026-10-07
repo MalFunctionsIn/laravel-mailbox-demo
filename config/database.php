@@ -32,6 +32,39 @@ return [
 
     'connections' => [
 
+        /*
+        |----------------------------------------------------------------------
+        | Mailbox Store
+        |----------------------------------------------------------------------
+        |
+        | Used when MAILBOX_STORE_DRIVER=database, which is what serverless
+        | hosts need: their filesystem is read-only apart from /tmp, and /tmp
+        | is not shared between invocations, so the "file" store would lose
+        | every message between the request that sent it and the request that
+        | reads it.
+        |
+        | Set MAILBOX_DB_URL to the connection string your provider gives you
+        | (Neon, Supabase and Vercel Postgres all hand you one) and Laravel
+        | parses the rest out of it. The individual keys below are the fallback
+        | for a provider that only gives you separate values.
+        |
+        */
+
+        'mailbox' => [
+            'driver' => env('MAILBOX_DB_DRIVER', 'pgsql'),
+            'url' => env('MAILBOX_DB_URL'),
+            'host' => env('MAILBOX_DB_HOST', '127.0.0.1'),
+            'port' => env('MAILBOX_DB_PORT', '5432'),
+            'database' => env('MAILBOX_DB_DATABASE', 'mailbox'),
+            'username' => env('MAILBOX_DB_USERNAME', 'postgres'),
+            'password' => env('MAILBOX_DB_PASSWORD', ''),
+            'charset' => env('MAILBOX_DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('MAILBOX_DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),

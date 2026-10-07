@@ -1,0 +1,133 @@
+# Deploying to Vercel
+
+Vercel's Hobby plan is free with no sleeping, which is why this exists. The
+catch is that a Vercel function has a **read-only filesystem apart from `/tmp`,
+and `/tmp` is not shared between invocations** — so the mailbox cannot live on
+disk. A message captured by the request that sent it would be gone before the
+dashboard's request read it.
+
+The fix is `MAILBOX_STORE_DRIVER=database`. That means one free external
+Postgres, and it means attachments need a decision (see below).
+
+If you'd rather not run a database, [`DEPLOY.md`](DEPLOY.md) covers Render's
+free plan, where the app works exactly as built — file store, PDF attachments,
+no external services. The trade is that Render sleeps after ~15 minutes idle.
+
+---
+
+## What you need
+
+1. A Vercel account (Hobby, free).
+2. A free Postgres database. [Neon](https://neon.tech) is the easiest — it
+   hands you a connection string and has a free tier. Supabase and Vercel's own
+   Postgres integration both work too. `pdo_pgsql` and `pdo_mysql` are both
+   bundled in the runtime, so MySQL hosts like PlanetScale are fine as well.
+
+## Steps
+
+1. **Import the repo** at vercel.com → Add New → Project. Vercel reads
+   `vercel.json`, so leave the framework preset as *Other* and don't set a
+   build command.
+
+2. **Add the environment variables.** Only these two are secret; everything
+   else is already in `vercel.json`:
+
+   | Variable | Value |
+   | --- | --- |
+   | `APP_KEY` | output of `php artisan key:generate --show` |
+   | `MAILBOX_DB_URL` | your Postgres connection string, e.g. `postgres://user:pass@host/db?sslmode=require` |
+
+   Optionally set `APP_URL` to the deployment URL once you have it, so the
+   dashboard's links are absolute and correct.
+
+3. **Deploy.** The build runs `composer run vercel`, which checks the install
+   and migrates the mailbox tables into your database.
+
+Migrations run on every deploy and are idempotent, so there's no separate
+release step.
+
+## Attachments are off by default
+
+`vercel.json` sets `MAILBOX_ATTACHMENTS_ENABLED=false`, and that's deliberate.
+
+With the database store, attachment *metadata* goes into Postgres but the
+*bytes* still go to a Laravel filesystem disk — which on Vercel is read-only.
+The package's `mailbox` disk is configured with `throw => false`, so the write
+fails quietly: you'd get an attachment row in the database, a paperclip in the
+dashboard, and an empty file on download. A visible broken link is worse than
+no link, hence off.
+
+To get the PDF receipt back, give it real object storage. Cloudflare R2 has a
+free tier and speaks S3:
+
+```ini
+MAILBOX_ATTACHMENTS_ENABLED=true
+MAILBOX_ATTACHMENTS_DISK=s3
+
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=auto
+AWS_BUCKET=mailbox-demo
+AWS_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+AWS_USE_PATH_STYLE_ENDPOINT=true
+```
+
+That needs `composer require league/flysystem-aws-s3-v3` as a real (non-dev)
+dependency.
+
+## Why the build can fail on purpose
+
+`redberry/mailbox-for-laravel` sits in `require-dev` — correctly, since it
+should never ship to production. But it is also the entire subject of this
+demo, so if the build installs with `--no-dev` the package vanishes and the app
+deploys "successfully", then 500s at runtime on an unknown `mailbox` mailer.
+
+`scripts/vercel-build.php` checks for it and fails the build with an
+explanation instead. If you hit it, either set `COMPOSER_FLAGS` to an empty
+string in the Vercel project's build environment, or move the package from
+`require-dev` to `require`.
+
+## Environment variables already set in vercel.json
+
+| Variable | Value | Why |
+| --- | --- | --- |
+| `APP_ENV` | `demo` | Must not be `production` — the package goes inert there |
+| `SESSION_DRIVER` | `cookie` | A file session writes the CSRF token in one invocation and validates it in another, so every button returns 419 |
+| `CACHE_STORE` | `array` | The file cache driver needs a writable disk |
+| `LOG_CHANNEL` | `stderr` | `storage/logs` is read-only; stderr reaches Vercel's log drain |
+| `MAILBOX_STORE_DRIVER` | `database` | The whole reason this file exists |
+| `DEMO_PUBLIC_MAILBOX` | `true` | Opens `/mailbox` to visitors. Safe here, never on real mail |
+| `MAILBOX_ATTACHMENTS_ENABLED` | `false` | See above |
+
+`api/index.php` additionally points `VIEW_COMPILED_PATH` at `/tmp` before
+Laravel boots, so Blade can compile on a cold start.
+
+## PHP version
+
+`vercel.json` pins `vercel-php@0.7.4`, which is PHP 8.3 — the version this
+project is tested against. `vercel-php@0.9.0` gives you PHP 8.5 if you want it;
+the package requires `^8.3` so it should be fine, but it's untested here.
+
+## What was verified, and what wasn't
+
+Verified locally against a real MySQL 8.4 instance in Docker:
+
+- `MAILBOX_STORE_DRIVER=database` captures and reads back all four message
+  types, with attachment metadata landing in the database
+- the package's migrations run clean on the `mailbox` connection
+- the full 34-test suite passes against the database store, not just the
+  file store
+- `scripts/vercel-build.php` passes, fails on a missing package, and fails on
+  a missing database, with the right exit codes
+
+Not verified, because it needs your accounts: the actual Vercel deployment,
+the `vercel-php` runtime's behaviour, and whether its `composer install`
+includes dev dependencies. The build guard exists precisely because that last
+one is unknown.
+
+## Expect a cold start
+
+The runtime reports ~250ms cold and ~5ms warm, but that's for a bare PHP file.
+Laravel on a cold invocation also boots the framework and compiles Blade into
+`/tmp`, so the first hit after an idle period will be noticeably slower — still
+far better than Render's 30–60s wake-up.

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.4",
+      "maxDuration": 15
+    }
+  },
+  "routes": [
+    { "src": "/vendor/mailbox/(.*)", "dest": "/public/vendor/mailbox/$1" },
+    { "src": "/favicon.ico", "dest": "/public/favicon.ico" },
+    { "src": "/robots.txt", "dest": "/public/robots.txt" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
+  ],
+  "env": {
+    "APP_ENV": "demo",
+    "APP_DEBUG": "false",
+    "LOG_CHANNEL": "stderr",
+    "SESSION_DRIVER": "cookie",
+    "CACHE_STORE": "array",
+    "QUEUE_CONNECTION": "sync",
+    "MAIL_MAILER": "mailbox",
+    "MAILBOX_ENABLED": "true",
+    "MAILBOX_STORE_DRIVER": "database",
+    "MAILBOX_ATTACHMENTS_ENABLED": "false",
+    "MAILBOX_POLLING_INTERVAL": "3000",
+    "DEMO_PUBLIC_MAILBOX": "true"
+  }
+}

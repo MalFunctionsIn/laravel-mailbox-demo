@@ -179,9 +179,12 @@ Same bug. One suite catches it; the fakes report success.
 ## Deploying it
 
 The app is one container with no database, no object storage and no queue
-worker. It needs a writable filesystem, which rules out serverless — see
-[`DEPLOY.md`](DEPLOY.md) for Railway, Render and Fly.io recipes, and for why
-Vercel can't host it.
+worker. [`DEPLOY.md`](DEPLOY.md) has Railway, Render and Fly.io recipes, where
+it runs exactly as built.
+
+Serverless needs more work, because a read-only filesystem can't hold the
+mailbox — [`VERCEL.md`](VERCEL.md) covers running it on Vercel's free tier with
+a Postgres store.
 
 ```bash
 docker build -t mailbox-demo .

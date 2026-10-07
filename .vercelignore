@@ -1,0 +1,11 @@
+docker
+docs
+tests
+Dockerfile
+.dockerignore
+render.yaml
+storage/app/mailbox
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
