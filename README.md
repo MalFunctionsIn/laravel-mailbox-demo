@@ -92,7 +92,7 @@ php artisan test
 ```
 
 ```
-Tests:    34 passed (159 assertions)
+Tests:    37 passed (182 assertions)
 ```
 
 `phpunit.xml` routes test mail through the same transport:
@@ -147,6 +147,7 @@ Mailbox::firstSent()
 | `tests/Feature/DemoPanelTest.php` | Driving the panel over HTTP, including a data provider across all four sends |
 | `tests/Feature/FakeComparisonTest.php` | The control group — `Mail::fake()` and `Notification::fake()` staying green while the rendered email is wrong |
 | `tests/Feature/MailboxGateTest.php` | The dashboard gate: open in local, open on the demo host only when switched on, 403 otherwise |
+| `tests/Feature/HttpsBehindProxyTest.php` | URLs stay https behind a TLS-terminating proxy — the bug that broke the first Render deploy |
 
 ### The assertion that earns its keep
 
@@ -272,5 +273,5 @@ app/
 resources/views/
   demo.blade.php                      the control panel
   emails/                             the three templates
-tests/Feature/                        34 tests, 159 assertions
+tests/Feature/                        37 tests, 182 assertions
 ```
