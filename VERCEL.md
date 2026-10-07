@@ -29,18 +29,27 @@ no external services. The trade is that Render sleeps after ~15 minutes idle.
    `vercel.json`, so leave the framework preset as *Other* and don't set a
    build command.
 
-2. **Add the environment variables.** Only these two are secret; everything
-   else is already in `vercel.json`:
+2. **Set Application Preset to `Other`.** Vercel's import screen detects
+   Laravel's `package.json` and offers `Vite`, which builds a frontend that
+   does not exist here and then fails looking for `dist/`. A preset chosen on
+   that screen is saved on the project and overrides `vercel.json`.
 
-   | Variable | Value |
-   | --- | --- |
-   | `APP_KEY` | output of `php artisan key:generate --show` |
-   | `MAILBOX_DB_URL` | your Postgres connection string, e.g. `postgres://user:pass@host/db?sslmode=require` |
+3. **Add every environment variable** from
+   [`.env.vercel.example`](.env.vercel.example) — paste the file into Vercel's
+   *Import .env* box and replace the two placeholders.
 
-   Optionally set `APP_URL` to the deployment URL once you have it, so the
-   dashboard's links are absolute and correct.
+   Set all of them, not just the secrets. `vercel.json` carries an `env` block,
+   but `env` is absent from Vercel's current `vercel.json` property list and is
+   documented elsewhere as legacy, so it cannot be relied on to reach the
+   running app. This repository has no committed `.env` either, which makes the
+   dashboard the only source of configuration.
 
-3. **Deploy.** The build runs `composer run vercel`, which checks the install
+   The failure mode if they do not arrive is quiet rather than loud: `APP_ENV`
+   falls back to `production`, which switches the mailbox package off entirely,
+   and `MAIL_MAILER` falls back to `log`. The site loads, the buttons work, and
+   nothing ever appears in the dashboard.
+
+4. **Deploy.** The build runs `composer run vercel`, which checks the install
    and migrates the mailbox tables into your database.
 
 Migrations run on every deploy and are idempotent, so there's no separate
@@ -128,7 +137,7 @@ already on the cookie driver, so this is the only cause.
 `DEMO_PUBLIC_MAILBOX` did not reach the runtime. Add it as `true` in the
 project's environment variables.
 
-## Environment variables already set in vercel.json
+## What each variable is for
 
 | Variable | Value | Why |
 | --- | --- | --- |
@@ -142,6 +151,9 @@ project's environment variables.
 
 `api/index.php` additionally points `VIEW_COMPILED_PATH` at `/tmp` before
 Laravel boots, so Blade can compile on a cold start.
+
+The same values are mirrored in `vercel.json`'s `env` block. Treat that as a
+fallback only — set them in the dashboard regardless.
 
 ## PHP version
 
