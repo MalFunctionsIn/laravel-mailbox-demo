@@ -65,6 +65,28 @@
             font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #c4c4c8;
             background: #1a1a1d; border: 1px solid var(--line); border-radius: 5px; padding: 3px 7px;
         }
+        .field { display: flex; flex-direction: column; gap: 6px; }
+        .field label {
+            font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase;
+            color: var(--muted);
+        }
+        .field input[type="text"], .field input[type="email"], .field textarea, .field select {
+            font: inherit; font-size: 14px; color: var(--text); background: #0f0f11;
+            border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; width: 100%;
+        }
+        .field textarea { resize: vertical; min-height: 110px; line-height: 1.55; }
+        .field input:focus, .field textarea:focus, .field select:focus {
+            outline: none; border-color: var(--accent);
+        }
+        .field input[type="file"] { font-size: 13px; color: var(--muted); }
+        .field .hint { font-size: 12px; color: var(--muted); }
+        .row2 { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+        .compose { display: flex; flex-direction: column; gap: 14px; }
+        .errors {
+            background: #2a1113; border: 1px solid #5c2126; color: #fbd5d5;
+            border-radius: 10px; padding: 12px 15px; font-size: 13.5px; margin: 0;
+        }
+        .errors ul { margin: 6px 0 0; padding-left: 18px; }
         h2.section {
             font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
             margin: 36px 0 16px; font-weight: 600;
@@ -183,6 +205,88 @@
                 <button class="btn" type="submit">Send raw mail</button>
             </form>
         </div>
+    </div>
+
+    <h2 class="section">Compose your own</h2>
+
+    <div class="card">
+        <h3>Write an email and watch it get caught</h3>
+        <p>
+            Nothing here is pre-baked. Type whatever you like, attach a file, and it goes
+            through the same transport as everything above — then straight into the dashboard
+            instead of out to the internet.
+        </p>
+
+        @if ($errors->any())
+            <div class="errors">
+                That didn't send:
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('send.compose') }}" enctype="multipart/form-data" class="compose">
+            @csrf
+
+            <div class="row2">
+                <div class="field">
+                    <label for="to">To</label>
+                    <input type="email" id="to" name="to" required
+                           placeholder="ada@example.com"
+                           value="{{ old('to', 'ada@example.com') }}">
+                </div>
+                <div class="field">
+                    <label for="cc">CC <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+                    <input type="email" id="cc" name="cc"
+                           placeholder="warehouse@acme-store.test"
+                           value="{{ old('cc') }}">
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="subject">Subject</label>
+                <input type="text" id="subject" name="subject" required maxlength="200"
+                       placeholder="Your refund has been processed"
+                       value="{{ old('subject', 'Your refund has been processed') }}">
+            </div>
+
+            <div class="field">
+                <label for="body">Message</label>
+                <textarea id="body" name="body" required maxlength="5000"
+                          placeholder="Write anything…">{{ old('body', "Hi Ada,
+
+We've refunded $32.00 to your original payment method. It usually lands within three working days.
+
+Thanks,
+ACME Support") }}</textarea>
+                <span class="hint">Sent as text, not markup — the demo is public, so the body is escaped into the HTML template.</span>
+            </div>
+
+            <div class="row2">
+                <div class="field">
+                    <label for="format">Send as</label>
+                    <select id="format" name="format">
+                        <option value="both" @selected(old('format', 'both') === 'both')>HTML and plain text</option>
+                        <option value="html" @selected(old('format') === 'html')>HTML only</option>
+                        <option value="text" @selected(old('format') === 'text')>Plain text only</option>
+                    </select>
+                    <span class="hint">Pick one and compare them in the dashboard's toggle.</span>
+                </div>
+                <div class="field">
+                    <label for="attachment">Attachment <span style="text-transform:none;font-weight:400;">(optional)</span></label>
+                    <input type="file" id="attachment" name="attachment"
+                           accept=".pdf,.png,.jpg,.jpeg,.gif,.txt,.csv">
+                    <span class="hint">Up to 1&nbsp;MB. PDF, image, text or CSV.</span>
+                </div>
+            </div>
+
+            <div>
+                <button class="btn btn-primary" type="submit">Send this email</button>
+            </div>
+        </form>
     </div>
 
     <h2 class="section">Or all at once</h2>

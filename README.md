@@ -67,7 +67,7 @@ php artisan mailbox:clear        # empty the mailbox
 
 ---
 
-## The four things it sends
+## The five things it sends
 
 Each one exercises a different path into the mail transport, because the whole
 point is that the transport sits underneath all of them.
@@ -78,6 +78,7 @@ point is that the transport sits underneath all of them.
 | Shipment shipped | `App\Notifications\ShipmentShipped` | Laravel's notification system + Markdown mail theme |
 | Abandoned cart | `App\Mail\AbandonedCart` | Markdown mailable, no attachments |
 | Raw message | `Mail::raw()` | No view, no Mailable class at all |
+| **Compose your own** | `App\Mail\ComposedMail` | A form on the panel: your own recipient, CC, subject, body, HTML/text choice and file upload |
 
 The PDF receipt is generated at request time by `App\Support\ReceiptPdf`, which
 hand-rolls a valid single-page PDF so the project stays dependency-free. In a
@@ -92,7 +93,7 @@ php artisan test
 ```
 
 ```
-Tests:    37 passed (182 assertions)
+Tests:    51 passed (250 assertions)
 ```
 
 `phpunit.xml` routes test mail through the same transport:
@@ -148,6 +149,7 @@ Mailbox::firstSent()
 | `tests/Feature/FakeComparisonTest.php` | The control group — `Mail::fake()` and `Notification::fake()` staying green while the rendered email is wrong |
 | `tests/Feature/MailboxGateTest.php` | The dashboard gate: open in local, open on the demo host only when switched on, 403 otherwise |
 | `tests/Feature/HttpsBehindProxyTest.php` | URLs stay https behind a TLS-terminating proxy — the bug that broke the first Render deploy |
+| `tests/Feature/ComposeMailTest.php` | The compose form: uploads, CC, format switching, validation, and markup in the body being escaped |
 
 ### The assertion that earns its keep
 
@@ -267,11 +269,12 @@ app/
   Console/Commands/SendDemoMail.php   artisan demo:mail
   Mail/OrderConfirmation.php          HTML + text, cc/bcc, headers, PDF
   Mail/AbandonedCart.php              markdown, no attachments
+  Mail/ComposedMail.php               whatever the visitor types
   Notifications/ShipmentShipped.php   markdown notification
   Support/Order.php                   fake order, no database
   Support/ReceiptPdf.php              dependency-free PDF generator
 resources/views/
   demo.blade.php                      the control panel
   emails/                             the three templates
-tests/Feature/                        37 tests, 182 assertions
+tests/Feature/                        51 tests, 250 assertions
 ```
