@@ -1,30 +1,62 @@
-# Render blueprint. In the Render dashboard: New → Blueprint → point it at this
-# repo. Render injects PORT itself; the entrypoint binds Apache to it.
+# Render Blueprint.
+#
+# In the Render dashboard: New → Blueprint → point it at this repo. Render
+# reads this file, builds the Dockerfile and starts the service. The only
+# thing it will ask you for is APP_KEY.
+#
+# The free plan is 0.1 CPU / 512 MB, which is comfortable: the container idles
+# around 50 MB. It spins down after 15 minutes without a request and takes
+# roughly a minute to wake on the next one.
 services:
   - type: web
     name: laravel-mailbox-demo
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    region: oregon
     healthCheckPath: /
+
     envVars:
-      # Generate locally with: php artisan key:generate --show
+      # The one value Render will prompt for, at blueprint creation.
+      # Generate it with: php artisan key:generate --show
+      #
+      # Leaving it blank is survivable — the entrypoint generates an ephemeral
+      # key so the service still boots — but then sessions reset on every
+      # restart, and on the free plan restarts are frequent.
       - key: APP_KEY
         sync: false
-      # Set to the URL Render gives you, e.g. https://laravel-mailbox-demo.onrender.com
-      - key: APP_URL
-        sync: false
+
+      - key: APP_NAME
+        value: Mailbox Demo
+
+      # Must not be "production": the package switches itself off there.
       - key: APP_ENV
         value: demo
       - key: APP_DEBUG
         value: "false"
-      # Opens /mailbox to anonymous visitors. Only safe because every message
-      # in this app is a fake ACME Store order.
-      - key: DEMO_PUBLIC_MAILBOX
-        value: "true"
+
+      - key: MAIL_MAILER
+        value: mailbox
+      - key: MAIL_FROM_ADDRESS
+        value: shop@acme-store.test
+      - key: MAIL_FROM_NAME
+        value: ACME Store
+
       - key: MAILBOX_ENABLED
         value: "true"
+
+      # The whole point of choosing Render: a writable filesystem, so the
+      # mailbox needs no database and attachments work.
       - key: MAILBOX_STORE_DRIVER
         value: file
+      - key: MAILBOX_ATTACHMENTS_ENABLED
+        value: "true"
+
       - key: MAILBOX_POLLING_INTERVAL
         value: "2000"
+
+      # Opens /mailbox to anonymous visitors. Safe here because every message
+      # is a fake ACME Store order. Never set this on an app that sends real
+      # mail — captured messages hold password reset links and signed URLs.
+      - key: DEMO_PUBLIC_MAILBOX
+        value: "true"

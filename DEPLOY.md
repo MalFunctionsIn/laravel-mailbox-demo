@@ -30,17 +30,29 @@ Railway detects the `Dockerfile` on its own, so there's no config file to add.
 Railway sets `PORT` itself and the entrypoint binds Apache to it. Don't hardcode
 a port.
 
-## Render
+## Render (recommended)
 
-A `render.yaml` blueprint is committed, so:
+A `render.yaml` blueprint is committed, so there is nothing to configure:
 
 1. **New → Blueprint**, point it at the repo.
-2. Render will prompt for the two variables marked `sync: false` — `APP_KEY` and
-   `APP_URL`. Everything else comes from the blueprint.
+2. Render prompts for **`APP_KEY`** and nothing else. Generate one with
+   `php artisan key:generate --show`.
+3. **Apply.** First build takes a few minutes; later ones are cached.
 
-Note the free plan spins the service down after ~15 minutes of inactivity. The
-first request after that takes 30–60s to wake. Fine for a link in a video
-description; annoying if you're recording live.
+Everything else — the mailer, the store driver, the dashboard gate — comes from
+the blueprint. No database, no object storage, no accounts beyond Render.
+
+The free plan is 0.1 CPU / 512 MB; the container idles at about 50 MB. A
+workspace gets 750 instance-hours a month, and no credit card is required.
+
+Two behaviours worth knowing before you put the link in a video description:
+
+- **It sleeps.** After 15 minutes without a request the service spins down, and
+  the next visitor waits roughly a minute for it to wake.
+- **The mailbox starts empty** after every sleep or deploy, because free
+  services get no persistent disk. For this demo that is arguably right —
+  visitors get a clean slate and click the buttons themselves — but it means
+  the dashboard looks empty until they send something.
 
 ## Fly.io
 

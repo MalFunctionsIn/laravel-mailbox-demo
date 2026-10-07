@@ -182,9 +182,13 @@ The app is one container with no database, no object storage and no queue
 worker. [`DEPLOY.md`](DEPLOY.md) has Railway, Render and Fly.io recipes, where
 it runs exactly as built.
 
+Render is the path of least resistance: a `render.yaml` blueprint is committed,
+it asks for `APP_KEY` and nothing else, and everything works including the PDF
+attachments.
+
 Serverless needs more work, because a read-only filesystem can't hold the
 mailbox — [`VERCEL.md`](VERCEL.md) covers running it on Vercel's free tier with
-a Postgres store.
+a Postgres store, at the cost of a database and the attachment preview.
 
 ```bash
 docker build -t mailbox-demo .
