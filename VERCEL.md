@@ -96,6 +96,48 @@ explanation instead. If you hit it, either set `COMPOSER_FLAGS` to an empty
 string in the Vercel project's build environment, or move the package from
 `require-dev` to `require`.
 
+## Testing the Vercel configuration without deploying
+
+A deploy is a slow way to find a configuration mistake. `scripts/vercel-preflight.sh`
+runs the app locally with exactly the settings a Vercel deployment uses — the
+database-backed mailbox store, cookie sessions, attachments disabled, Blade
+compiling into `/tmp` — and runs the same build checks first:
+
+```bash
+scripts/vercel-preflight.sh 'postgresql://user:pass@ep-x.neon.tech/neondb?sslmode=require'
+```
+
+Then open http://127.0.0.1:9200 and http://127.0.0.1:9200/mailbox and click
+through. If messages appear there, the configuration is sound and any
+remaining failure is on Vercel's side — the preset, the environment variables,
+or the build.
+
+It does not emulate the serverless runtime. It covers the part that actually
+differs from local development, which is where the mistakes are.
+
+To point it at a throwaway database instead of your real one:
+
+```bash
+docker run -d --name mailbox-pg -e MYSQL_ROOT_PASSWORD=preflight \
+  -e MYSQL_DATABASE=mailbox_vercel -p 9307:3306 mysql:8
+scripts/vercel-preflight.sh 'mysql://root:preflight@127.0.0.1:9307/mailbox_vercel'
+```
+
+## Deploying from the CLI instead of the dashboard
+
+The dashboard hides build output behind a summary. The CLI prints the whole
+thing and tends to say what actually went wrong:
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+Run it from the project root. It reads the same `vercel.json`, and prompts for
+project settings on first run — answer **Other** when it asks about the
+framework.
+
 ## Troubleshooting
 
 ### `No Output Directory named "dist" found after the Build completed`
