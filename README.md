@@ -92,7 +92,7 @@ php artisan test
 ```
 
 ```
-Tests:    30 passed (152 assertions)
+Tests:    34 passed (159 assertions)
 ```
 
 `phpunit.xml` routes test mail through the same transport:
@@ -146,6 +146,7 @@ Mailbox::firstSent()
 | `tests/Feature/MailboxCollectionTest.php` | Collection-level: `assertSent` with closures, `sent()`, isolation between tests |
 | `tests/Feature/DemoPanelTest.php` | Driving the panel over HTTP, including a data provider across all four sends |
 | `tests/Feature/FakeComparisonTest.php` | The control group — `Mail::fake()` and `Notification::fake()` staying green while the rendered email is wrong |
+| `tests/Feature/MailboxGateTest.php` | The dashboard gate: open in local, open on the demo host only when switched on, 403 otherwise |
 
 ### The assertion that earns its keep
 
@@ -172,6 +173,27 @@ FakeComparisonTest        ✓ mail fake passes regardless of the rendered total
 ```
 
 Same bug. One suite catches it; the fakes report success.
+
+---
+
+## Deploying it
+
+The app is one container with no database, no object storage and no queue
+worker. It needs a writable filesystem, which rules out serverless — see
+[`DEPLOY.md`](DEPLOY.md) for Railway, Render and Fly.io recipes, and for why
+Vercel can't host it.
+
+```bash
+docker build -t mailbox-demo .
+docker run --rm -p 8080:8080 \
+  -e APP_KEY="$(php artisan key:generate --show)" \
+  -e APP_URL=http://localhost:8080 \
+  mailbox-demo
+```
+
+Two variables matter on a host: `APP_KEY`, and `DEMO_PUBLIC_MAILBOX=true` to
+open the dashboard to visitors. `APP_ENV` must not be `production` — the package
+switches itself off there by design.
 
 ---
 
@@ -243,5 +265,5 @@ app/
 resources/views/
   demo.blade.php                      the control panel
   emails/                             the three templates
-tests/Feature/                        30 tests, 152 assertions
+tests/Feature/                        34 tests, 159 assertions
 ```

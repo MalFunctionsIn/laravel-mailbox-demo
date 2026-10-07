@@ -1,0 +1,30 @@
+# Render blueprint. In the Render dashboard: New → Blueprint → point it at this
+# repo. Render injects PORT itself; the entrypoint binds Apache to it.
+services:
+  - type: web
+    name: laravel-mailbox-demo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /
+    envVars:
+      # Generate locally with: php artisan key:generate --show
+      - key: APP_KEY
+        sync: false
+      # Set to the URL Render gives you, e.g. https://laravel-mailbox-demo.onrender.com
+      - key: APP_URL
+        sync: false
+      - key: APP_ENV
+        value: demo
+      - key: APP_DEBUG
+        value: "false"
+      # Opens /mailbox to anonymous visitors. Only safe because every message
+      # in this app is a fake ACME Store order.
+      - key: DEMO_PUBLIC_MAILBOX
+        value: "true"
+      - key: MAILBOX_ENABLED
+        value: "true"
+      - key: MAILBOX_STORE_DRIVER
+        value: file
+      - key: MAILBOX_POLLING_INTERVAL
+        value: "2000"
